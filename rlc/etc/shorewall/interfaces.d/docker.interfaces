@@ -1,0 +1,3 @@
+#ZONE  INTERFACE  OPTIONS
+loc    docker     physical=docker+,routeback=1
+loc    br         physical=br-+,routeback=1

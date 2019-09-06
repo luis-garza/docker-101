@@ -1,0 +1,21 @@
+# Define ubuntu as base image
+FROM ubuntu:bionic
+
+# Add meta information to the image
+LABEL maintainer="captain.ahab@docker.com"
+
+# Update packages cache
+RUN apt update
+
+# Install packages
+RUN apt install -y cowsay fortune
+
+# Remove packages cache
+RUN rm -rf /var/lib/apt/lists/*
+
+# Add new commands to the system PATH
+RUN ln -s /usr/games/cowsay /usr/bin/cowsay
+RUN ln -s /usr/games/fortune /usr/bin/fortune
+
+# Define default command
+CMD bash -c "fortune -s | cowsay"

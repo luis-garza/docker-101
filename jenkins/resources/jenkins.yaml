@@ -1,0 +1,163 @@
+# Jenkins global configuration
+jenkins:
+  systemMessage: Jenkins lab
+  numExecutors: 0
+  labelString: master
+  mode: EXCLUSIVE
+
+  # Cloud definitions
+  clouds:
+
+    # Localhost Docker cloud definition
+    - docker:
+        name: localhost
+        dockerApi:
+          dockerHost:
+            uri: unix:///var/run/docker.sock
+
+        # Docker agents definitions
+        templates:
+          - name: my-agent
+            labelString: my-agent
+            dockerTemplateBase:
+              image: openjdk:11-jre-slim
+              privileged: false
+            mode: NORMAL
+            pullStrategy: PULL_LATEST
+            remoteFs: /home
+            connector: attach
+
+# Other plugins
+unclassified:
+
+  # Artifactory configuration
+  artifactorybuilder:
+    useCredentialsPlugin: true
+    artifactoryServers:
+      - serverId: my-artifactory
+        artifactoryUrl: https://artifactory.foobar.com
+        deployerCredentialsConfig:
+          credentialsId: generic-user
+        resolverCredentialsConfig:
+          credentialsId: generic-user
+          overridingCredentials: true
+
+  # Bitbucket configuration
+  bitbucketEndpointConfiguration:
+    endpoints:
+      - bitbucketServerEndpoint:
+          displayName: my-bitbucket
+          serverUrl: https://bitbucket.foobar.com
+          manageHooks: false
+          credentialsId: generic-user
+
+  # Shared libraries configuration
+  globalLibraries:
+    libraries:
+      - name: my-library
+        defaultVersion: master
+        implicit: false
+        includeInChangesets: false
+        retriever:
+          modernSCM:
+            scm:
+              git:
+                remote: ssh://git@bitbucket.foobar.com/my-project/my-repository.git
+                credentialsId: generic-ssh-key
+                traits:
+                  - branchDiscoveryTrait
+                  - tagDiscoveryTrait
+
+  # Jenkins mailer configuration
+  mailer:
+    smtpHost: my-mail.foobar.com
+    smtpPort: 25
+    adminAddress: Jenkins <jenkins@foobar.com>
+    replyToAddress: ''
+
+  # SonarQube configuration
+  sonarglobalconfiguration:
+    buildWrapperEnabled: true
+    installations:
+      - name: my-sonarqube
+        serverUrl: https://sonarqube.foobar.com
+        credentialsId: sonar-token
+        serverAuthenticationToken: ''
+        triggers:
+          skipScmCause: false
+          skipUpstreamCause: false
+
+  # Slack configuration
+  slackNotifier:
+    baseUrl: https://foobar.slack.com/services/hooks/jenkins
+    tokenCredentialId: slack-token
+    room: '#jenkins'
+
+
+# Credentials definitions
+credentials:
+  system:
+    domainCredentials:
+      - credentials:
+
+          # Generic user
+          - usernamePassword:
+              scope: GLOBAL
+              id: generic-user
+              description: Generic user for automation tasks
+              username: none
+              password: none
+
+          # Generic SSH key
+          - basicSSHUserPrivateKey:
+              scope: GLOBAL
+              id: generic-ssh-key
+              description: Generic user with unsecure SSH key
+              username: none
+              passphrase: ''
+              privateKeySource:
+                directEntry:
+                  privateKey: none
+
+          # DCA Slack token
+          - string:
+              scope: GLOBAL
+              id: slack-token
+              description: Slack token for Jenkins integration
+              secret: none
+
+          # SonarQube token
+          - string:
+              scope: GLOBAL
+              id: sonar-token
+              description: SonarQube token
+              secret: none
+
+jobs:
+
+  - script: >
+      pipelineJob('hello-world-pipeline') {
+          definition {
+              cps {
+                  script("""
+                    pipeline {
+                      agent {
+                        label 'my-agent'
+                      }
+                      stages {
+                        stage('Say hello') {
+                          steps {
+                            echo 'Hello world!'
+                          }
+                        }
+                        stage('Say bye') {
+                          steps {
+                            echo 'Bye world!'
+                          }
+                        }
+                      }
+                    }
+                  """)
+              }
+          }
+      }
